@@ -56,9 +56,9 @@ G        = 9.81
 W        = MASS * G
 
 # main wing (swept/tapered delta)
-SPAN     = 0.900
-SEMI     = 0.450
-C_ROOT   = 0.400        # te(700) - root_le(300) = 400 mm
+SPAN     = 0.800
+SEMI     = 0.400
+C_ROOT   = 0.390        # te(700) - root_le(300) = 400 mm
 C_TIP    = 0.150        # te(700) - tip_le(550) = 150 mm
 S_WING   = (C_ROOT + C_TIP) / 2 * SPAN          # 0.2475 m^2
 TAPER    = C_TIP / C_ROOT                         # 0.375
