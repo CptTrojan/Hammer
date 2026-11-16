@@ -44,12 +44,12 @@ class AircraftGeometry:
     Ixz: float = 0.0012
 
     # Main Wing (Cranked/Swept Delta)
-    span: float = 0.900
-    c_root: float = 0.400
+    span: float = 0.800
+    c_root: float = 0.390
     c_tip: float = 0.150
     le_root: float = 0.300
     le_tip: float = 0.550
-    wing_z: float = 0.006       # 6 mm below centerline (+Z is down)
+    wing_z: float = 0.000       # 6 mm below centerline (+Z is down)
 
     # Canard
     span_can: float = 0.386

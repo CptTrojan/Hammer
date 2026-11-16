@@ -15,8 +15,10 @@ from mathutils import Vector
 from bpy.props import FloatProperty, BoolProperty, PointerProperty
 from bpy.types import PropertyGroup, Panel, Operator
 
-# Ensure local directory is in path for module loading
-sim_dir = os.path.dirname(os.path.abspath(__file__))
+# --- FOOLPROOF PATH FIX FOR BLENDER ---
+# Point directly to your project folder where all files are saved:
+sim_dir = r"C:\Users\adity\Desktop\Hammer\Hammer"
+
 if sim_dir not in sys.path:
     sys.path.insert(0, sim_dir)
 
@@ -25,7 +27,6 @@ import kite_dynamics
 importlib.reload(kite_aero)
 importlib.reload(kite_dynamics)
 
-# Initialize simulator instance
 SIM_ENGINE = kite_dynamics.SixDOFSimulator()
 geom = SIM_ENGINE.geom
 
@@ -218,7 +219,7 @@ def bake(frames):
     fc_rz = cbag.fcurves.new("rotation_euler", index=2)  # Yaw
 
     co_lx, co_ly, co_lz = [], [], []
-    co_rx, co_ry_l, co_rz = [], [], []
+    co_rx, co_ry, co_rz = [], [], []
 
     # Hold phase
     for i in range(n_hold):
@@ -285,7 +286,7 @@ def bake(frames):
     sc.frame_end = int(co_lx[-2]) + 1 if co_lx else 1
 
     for fc, co in ((fc_lx, co_lx), (fc_ly, co_ly), (fc_lz, co_lz),
-                    (fc_rx, co_rx), (fc_ry, co_ry_l), (fc_rz, co_rz)):
+                    (fc_rx, co_rx), (fc_ry, co_ry), (fc_rz, co_rz)):
         fc.keyframe_points.add(count=total_n)
         fc.keyframe_points.foreach_set("co", co)
         fc.update()
@@ -722,4 +723,65 @@ class KITE_PT_SimPanel(Panel):
         b = ly.box()
         b.label(text="6-DOF Aerodynamics & Stability", icon='FORCE_WIND')
         c = b.column(align=True)
-        c.label(text=f"Span {geom.span*1e3:.0f}mm | Sref {geom.s_ref:.4f}m\u00
+        c.label(text=f"Span {geom.span*1e3:.0f}mm | Sref {geom.s_ref:.4f}m\u00b2 | AR {geom.ar:.2f}")
+        c.label(text=f"Mass {geom.mass}kg | Inertia Ixx {geom.Ixx}, Iyy {geom.Iyy}, Izz {geom.Izz}")
+
+        b = ly.box()
+        b.label(text="Launch Settings", icon='EXPORT')
+        c = b.column(align=True)
+        c.prop(p, "launch_velocity", slider=True)
+        c.prop(p, "rail_angle", slider=True)
+        c.prop(p, "launch_height", slider=True)
+
+        b = ly.box()
+        b.label(text="Controls & Mixer", icon='DRIVER')
+        c = b.column(align=True)
+        c.prop(p, "throttle", slider=True)
+        c.prop(p, "elevon", slider=True)
+        c.prop(p, "roll_cmd", slider=True)
+
+        b = ly.box()
+        b.label(text="Phenomena Toggles", icon='CHECKBOX_HLT')
+        c = b.column(align=True)
+        c.prop(p, "use_canard")
+        c.prop(p, "use_torque")
+        c.prop(p, "use_ground_effect")
+        c.prop(p, "use_tip_fins")
+
+        b = ly.box()
+        b.label(text="Simulation", icon='TIME')
+        b.prop(p, "sim_time", slider=True)
+
+        ly.separator()
+        r = ly.row(align=True)
+        r.scale_y = 2.0
+        r.operator("kite.set_sim", icon='VIEWZOOM')
+        r.operator("kite.play_sim", icon='PLAY')
+        ly.operator("kite.reset_sim", icon='CANCEL')
+
+
+# ===================================================================
+#  REGISTER
+# ===================================================================
+
+classes = (KiteSimProps, KITE_OT_SetSim, KITE_OT_PlaySim, KITE_OT_ResetSim, KITE_PT_SimPanel)
+
+def register():
+    for cls in classes:
+        bpy.utils.register_class(cls)
+    bpy.types.Scene.kite_sim = PointerProperty(type=KiteSimProps)
+    setup_environment()
+    print("\n  KITE 6-DOF Flight Sim registered successfully.")
+    print("  Open sidebar (N) -> KITE tab\n")
+
+def unregister():
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
+    del bpy.types.Scene.kite_sim
+
+if __name__ == "__main__":
+    try:
+        unregister()
+    except Exception:
+        pass
+    register()
