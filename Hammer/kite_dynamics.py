@@ -144,7 +144,6 @@ class SixDOFSimulator:
                             launch_h: float = 1.0, fps: int = 24, dt: float = 0.004) -> list[dict]:
         ang = math.radians(rail_deg)
         q_init = euler_to_quat(0.0, ang, 0.0)
-        # Catapult launches along pitch angle theta = ang (so body u = V, w = 0)
         state = [0.0, 0.0, launch_h, launch_v, 0.0, 0.0, *q_init, 0.0, 0.0, 0.0]
         ctrl = self.mixer.mix(throttle_pct, elevon_deg, roll_deg)
 
@@ -158,6 +157,9 @@ class SixDOFSimulator:
         crashed = False
 
         for fi in range(n_frames + 1):
+            if crashed:
+                break
+
             fs = self.state_to_flight_state(state)
             wrench, ctx = self.aero.evaluate(fs, ctrl)
 
@@ -175,13 +177,26 @@ class SixDOFSimulator:
                 stalled=ctx.get("stalled", False),
                 crashed=crashed
             ))
-            if crashed:
-                break
 
+            if fi % 10 == 0:  # Print every 10th frame to Blender System Console
+                print(f"[Frame {fi:3d} | t={t:5.2f}s] "
+                      f"V={fs.V:5.1f}m/s | "
+                      f"AoA={fs.alpha_deg:4.1f}° | "
+                      f"CL={ctx['CL']:5.3f} | "
+                      f"CD={ctx['CD']:5.3f} | "
+                      f"Fx={wrench.fx:6.2f}N | "
+                      f"Fz={wrench.fz:6.2f}N | "
+                      f"Roll(L)={wrench.l:6.3f}Nm | "
+                      f"Pitch(M)={wrench.m:6.3f}Nm | "
+                      f"Yaw(N)={wrench.n:6.3f}Nm")
+
+            # Integrate RK4 sub-steps for this frame block
             for _ in range(spf):
                 state = self.step_rk4(state, ctrl, adt)
+            
             t += frame_dt
 
+            # Ground collision check (Altitude z <= 0 after initial launch clearance)
             if state[2] <= 0.0 and t > 0.15:
                 state[2] = 0.0
                 crashed = True

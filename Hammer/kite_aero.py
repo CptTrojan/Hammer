@@ -122,6 +122,14 @@ class FlightState:
     def beta(self) -> float:
         return max(min(math.asin(max(-1.0, min(1.0, self.v / self.V))), math.radians(45)), math.radians(-45))
 
+    @property
+    def alpha_deg(self) -> float:
+        return math.degrees(self.alpha)
+
+    @property
+    def beta_deg(self) -> float:
+        return math.degrees(self.beta)
+
 
 @dataclass
 class ControlInputs:
