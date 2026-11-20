@@ -33,7 +33,7 @@ class AeroWrench:
 @dataclass
 class AircraftGeometry:
     """Exact geometry extracted from kite_canard_delta.py (in SI units)."""
-    mass: float = 1.500
+    mass: float = 1.5
     g: float = 9.81
     rho: float = 1.225
 
@@ -49,31 +49,32 @@ class AircraftGeometry:
     c_tip: float = 0.150
     le_root: float = 0.300
     le_tip: float = 0.550
-    wing_z: float = 0.000       # 6 mm below centerline (+Z is down)
+    wing_z: float = 0.000       # +Z is down
 
     # Canard
-    span_can: float = 0.386
-    c_can: float = 0.100
-    x_can_le: float = 0.105
+    span_can: float = 0.38
+    c_can: float = 0.09
+    x_can_le: float = 0.1
+    i_can_deg: float = 3.0
 
     # Elevons
-    elev_chord: float = 0.075
-    elev_y_in: float = 0.140
-    elev_y_out: float = 0.380
+    elev_chord: float = 0.06
+    elev_y_in: float = 0.240
+    elev_y_out: float = 0.400
 
     # Tip Fins (Drooped)
     fin_area_each: float = 0.0015
-    fin_x_ac: float = 0.710
-    fin_z_ac: float = 0.020     # Drooped below wing (+Z down)
+    fin_x_ac: float = 0.6
+    fin_z_ac: float = 0.00     # Drooped below wing (+Z down)
 
     # CG & Propulsion (A2212 1000KV + 1045 Pusher Prop)
-    x_cg: float = 0.430
-    motor_x: float = 0.716      # Prop station aft of nose
-    motor_z: float = -0.012     # 12 mm ABOVE centerline (-Z is up in body frame)
+    x_cg: float = 0.39          # Currently set to 0.39
+    motor_x: float = 0.670      # Prop station aft of nose
+    motor_z: float = 0.0     # 12 mm ABOVE centerline (-Z is up in body frame)
     prop_d: float = 0.254       # 10 inch prop (0.254 m)
     prop_pitch: float = 0.1143  # 4.5 inch pitch
     I_prop: float = 4.5e-5      # Rotational inertia of 1045 prop + bell (kg*m^2)
-    max_rpm: float = 9200.0     # 3S LiPo loaded RPM
+    max_rpm: float = 16000.0     # 3S LiPo loaded RPM
 
     def __post_init__(self):
         self.semi = self.span / 2.0
@@ -233,9 +234,9 @@ class CanardModule(AeroModule):
         V = s.V
         qbar = 0.5 * g.rho * V**2
 
-        # Local pitch rate induces extra alpha at forward canard
+        # Include built-in +3 deg canard incidence + pitch-rate damping
         arm_can = g.x_cg - g.x_ac_can  # Positive (canard is ahead of CG)
-        a_can = a - (s.q * arm_can / V)
+        a_can = a + math.radians(g.i_can_deg) - (s.q * arm_can / V)
 
         if abs(a_can) <= self.alpha_stall_can:
             cl_can = self.cl_a_can * a_can
